@@ -48,9 +48,47 @@ def messages():
         return response
 
 
-@app.route('/messages/<int:id>')
+@app.route('/messages/<int:id>', methods=['PATCH', 'DELETE'])
 def messages_by_id(id):
-    return ''
+    message = Message.query.filter(Message.id == id).first()
+    if message == None:
+        response_body = {
+            "message": "This message does not exist. Please try again."
+        }
+        response = make_response(response_body, 404)
+        return response
+    
+    elif request.method == 'PATCH':
+        json = request.get_json()
+        for attr in json:
+            setattr(message, attr, json.get(attr))
+        
+        db.session.add(message)
+        db.session.commit()
+
+        message_dict = message.to_dict()
+
+        response = make_response(
+            message_dict,
+            200
+        )
+        return response
+    elif request.method == 'DELETE':
+        db.session.delete(message)
+        db.session.commit()
+
+        response_body = {
+            "delete_successful": True,
+            "message": "Message deleted."
+        }
+
+        response = make_response(
+            response_body,
+            200
+        )
+
+        return response
+
 
 if __name__ == '__main__':
     app.run(port=5555)
